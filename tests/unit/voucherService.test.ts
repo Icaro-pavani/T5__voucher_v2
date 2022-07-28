@@ -59,10 +59,14 @@ describe("voucherService test suite", () => {
         return true;
       });
 
-    const response = await voucherService.applyVoucher(voucher.code, 1000);
-    expect(response.amount).toBe(1000);
+    const amount = 1000;
+
+    const response = await voucherService.applyVoucher(voucher.code, amount);
+    expect(response.amount).toBe(amount);
     expect(response.discount).toBe(voucher.discount);
-    expect(response.finalAmount).toBe(1000 - 1000 * (voucher.discount / 100));
+    expect(response.finalAmount).toBe(
+      amount - amount * (voucher.discount / 100)
+    );
     expect(response.applied).toBe(true);
   });
 
@@ -79,10 +83,12 @@ describe("voucherService test suite", () => {
         return true;
       });
 
-    const response = await voucherService.applyVoucher(voucher.code, 99);
-    expect(response.amount).toBe(99);
+    const amount = 99;
+
+    const response = await voucherService.applyVoucher(voucher.code, amount);
+    expect(response.amount).toBe(amount);
     expect(response.discount).toBe(voucher.discount);
-    expect(response.finalAmount).toBe(99);
+    expect(response.finalAmount).toBe(amount);
     expect(response.applied).toBe(false);
   });
 
@@ -99,10 +105,33 @@ describe("voucherService test suite", () => {
         return true;
       });
 
-    const response = voucherService.applyVoucher(voucher.code, 1000);
+    const amount = 1000;
+
+    const response = voucherService.applyVoucher(voucher.code, amount);
     expect(response).rejects.toEqual({
       type: "conflict",
       message: "Voucher does not exist.",
     });
+  });
+
+  it("given used voucher don't apply discount", async () => {
+    const voucher = voucherFactory.createVoucherData();
+    jest
+      .spyOn(voucherRepository, "getVoucherByCode")
+      .mockImplementationOnce((): any => {
+        return { ...voucher, used: true };
+      });
+    jest
+      .spyOn(voucherRepository, "useVoucher")
+      .mockImplementationOnce((): any => {
+        return true;
+      });
+    const amount = 1000;
+
+    const response = await voucherService.applyVoucher(voucher.code, amount);
+    expect(response.amount).toBe(amount);
+    expect(response.discount).toBe(voucher.discount);
+    expect(response.finalAmount).toBe(amount);
+    expect(response.applied).toBe(false);
   });
 });
